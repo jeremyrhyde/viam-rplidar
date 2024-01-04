@@ -22,5 +22,4 @@ build/
 .artifact/cache
 .artifact/data
 
-src/thrid_party
 viam-rplidar

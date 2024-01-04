@@ -11,7 +11,7 @@ viam-rplidar: src/*
 	cp viam-rplidar ../
 
 ensure-submodule-initialized:
-	@if [ ! -d "src/thrid_party/rplidar_sdk/rplidar_sdk" ]; then \
+	@if [ ! -d "src/thrid_party/rplidar_sdk" ]; then \
 		echo "Submodule was not found. Initializing..."; \
 		git submodule update --init; \
 	else \
