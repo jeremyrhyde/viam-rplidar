@@ -26,31 +26,70 @@ namespace viam {
 namespace rplidar {
 
 // initialize will use the ResourceConfigs to begin the rplidar pipeline.
-std::tuple<RPLiDARProperties, bool, bool> RPLiDAR::initialize(sdk::ResourceConfig cfg) {
+std::tuple<RPLidarProperties, bool, bool> RPLidar::initialize(sdk::ResourceConfig cfg) {
     return {};
 }
 
 // CAMERA module methods
-RPLiDAR::RPLiDAR(sdk::Dependencies deps, sdk::ResourceConfig cfg) : Camera(cfg.name()) {
+RPLidar::RPLidar(sdk::Dependencies deps, sdk::ResourceConfig cfg) : Camera(cfg.name()) {
+
+
+//   drv = RPlidarDriver::CreateDriver(
+//       rp::standalone::rplidar::DRIVER_TYPE_SERIALPORT);
+
+//   if (!drv) {
+//     throw std::runtime_error("failed to create RPLidar driver.");
+//   }
+
+//   if (IS_FAIL(drv->connect(serial_port.c_str(), (_u32)serial_baudrate))) {
+//     RPlidarDriver::DisposeDriver(drv);
+//     throw std::runtime_error(
+//         "Error: Cannot bind RPLidar to the specified serial port " +
+//         serial_port + ".");
+//   }
+
+//   if (!getDeviceInfo()) {
+//     RPlidarDriver::DisposeDriver(drv);
+//     throw std::runtime_error("failed to get device info");
+//   }
+  
 }
 
-RPLiDAR::~RPLiDAR() {
+RPLidar::~RPLidar() {
 }
 
 // Reconfigure
-void RPLiDAR::reconfigure(sdk::Dependencies deps, sdk::ResourceConfig cfg) {
+void RPLidar::reconfigure(sdk::Dependencies deps, sdk::ResourceConfig cfg) {
     std::cerr << "reconfigure not implemented" << std::endl;
     return;
 }
 
 // GetImage
-sdk::Camera::raw_image RPLiDAR::get_image(std::string mime_type, const sdk::AttributeMap& extra) {
+sdk::Camera::raw_image RPLidar::get_image(std::string mime_type, const sdk::AttributeMap& extra) {
     std::cerr << "get_image not implemented" << std::endl;
     return {};
 }
 
+// GetImages
+sdk::Camera::image_collection RPLidar::get_images() {
+    std::cerr << "get_images not implemented" << std::endl;
+    return {};
+}
+
+// GetPointCloud
+sdk::Camera::point_cloud RPLidar::get_point_cloud(std::string mime_type, const sdk::AttributeMap& extra) {
+    std::cerr << "get_point_cloud not implemented" << std::endl;
+    return sdk::Camera::point_cloud{};
+}
+
+// GetGeometries
+std::vector<sdk::GeometryConfig> RPLidar::get_geometries(const sdk::AttributeMap& extra) {
+    std::cerr << "get_geometries not implemented" << std::endl;
+    return std::vector<sdk::GeometryConfig>{};
+}
+
 // GetProperties
-sdk::Camera::properties RPLiDAR::get_properties() {
+sdk::Camera::properties RPLidar::get_properties() {
     std::cerr << "get_properties not implemented" << std::endl;
     struct sdk::Camera::properties prop;
     prop.supports_pcd = true;
@@ -58,28 +97,10 @@ sdk::Camera::properties RPLiDAR::get_properties() {
     return prop;
 }
 
-// GetImages
-sdk::Camera::image_collection RPLiDAR::get_images() {
-    std::cerr << "get_images not implemented" << std::endl;
-    return {};
-}
-
 // DoCommand
-sdk::AttributeMap RPLiDAR::do_command(sdk::AttributeMap command) {
+sdk::AttributeMap RPLidar::do_command(sdk::AttributeMap command) {
     std::cerr << "do_command not implemented" << std::endl;
     return sdk::AttributeMap{};
-}
-
-// GetPointCloud
-sdk::Camera::point_cloud RPLiDAR::get_point_cloud(std::string mime_type, const sdk::AttributeMap& extra) {
-    std::cerr << "get_point_cloud not implemented" << std::endl;
-    return sdk::Camera::point_cloud{};
-}
-
-// GetGeometries
-std::vector<sdk::GeometryConfig> RPLiDAR::get_geometries(const sdk::AttributeMap& extra) {
-    std::cerr << "get_geometries not implemented" << std::endl;
-    return std::vector<sdk::GeometryConfig>{};
 }
 
 }  // namespace rplidar

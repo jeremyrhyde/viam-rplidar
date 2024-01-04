@@ -8,10 +8,11 @@ using namespace viam::sdk;
 int main(int argc, char* argv[]) {
     std::shared_ptr<ModelRegistration> mr = std::make_shared<ModelRegistration>(
         Camera::static_api(), Model("viam", "rplidar", "cpp"),
-        [](Dependencies deps, ResourceConfig cfg) { return std::make_shared<viam::rplidar::RPLiDAR>(deps, cfg); }
+        [](Dependencies deps, ResourceConfig cfg) { return std::make_shared<viam::rplidar::RPLidar>(deps, cfg); }
     );
 
     auto service = std::make_shared<ModuleService>(argc, argv, std::vector<std::shared_ptr<ModelRegistration>>{mr});
     service->serve();
+
     return 0;
 }

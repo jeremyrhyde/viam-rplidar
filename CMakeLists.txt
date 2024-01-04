@@ -21,20 +21,20 @@ FetchContent_MakeAvailable(viam-cpp-sdk)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
-# find_package(realsense2 REQUIRED)
-# find_package(viam-cpp-sdk REQUIRED)
 
 # The image encoders
-# set(THIRD_PARTY_SOURCES src/third_party/fpng.cpp src/third_party/lodepng.cpp)
+file(GLOB_RECURSE SOURCES 
+    "./thrid_party/rplidar_sdk/sdk/include/*/*.h" 
+    "./thrid_party/rplidar_sdk/sdk/include/*/*.hpp" 
+    "./thrid_party/rplidar_sdk/sdk/src/*/*.c" 
+    "./thrid_party/rplidar_sdk/sdk/src/*/*.cpp"
+)
 
 # construct the library
-# add_library(viamrealsense src/camera_realsense.cpp ${THIRD_PARTY_SOURCES})
-add_library(viamrplidar src/rplidar.cpp)# ${THIRD_PARTY_SOURCES})
-
+add_library(viamrplidar ${SOURCES} src/rplidar.cpp)
 target_link_libraries(viamrplidar 
     PUBLIC
         viam-cpp-sdk::viamsdk
-        #realsense2::realsense2
 	${CMAKE_DL_LIBS}
 )
 
@@ -44,19 +44,23 @@ target_compile_features(viamrplidar PUBLIC
 )
 target_compile_options(viamrplidar PRIVATE 
     -O2 
-    -Wredundant-move 
-    -Wpessimizing-move 
+    # -Wredundant-move 
+    # -Wpessimizing-move 
 )
 
 # construct the module executable
+#set(CMAKE_CXX_STANDARD 11)
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wchkp -pedantic")
+
 add_executable(viam-rplidar main.cpp)
 
+# target_link_libraries(viam-rplidar PRIVATE src/third_party/rplidar_sdk/output/Darwin/Release/libsl_lidar_sdk.a)
 target_link_libraries(viam-rplidar PRIVATE viamrplidar)
 
 target_compile_options(viam-rplidar PRIVATE 
     -O2 
-    -Wredundant-move 
-    -Wpessimizing-move 
+    # -Wredundant-move 
+    # -Wpessimizing-move 
 )
 
 enable_testing()

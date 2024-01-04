@@ -2,7 +2,7 @@
 format: src/*.cpp src/*.hpp test/*.cpp
 	ls src/*.cpp src/*.hpp test/*.cpp | xargs clang-format -i --style="{BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 100}"
 
-viam-rplidar: src/*
+build: src/*
 	rm -rf build/ && \
 	mkdir build && \
 	cd build && \
@@ -10,17 +10,9 @@ viam-rplidar: src/*
 	ninja all -j 4 && \
 	cp viam-rplidar ../
 
-ensure-submodule-initialized:
-	@if [ ! -d "src/thrid_party/rplidar_sdk" ]; then \
-		echo "Submodule was not found. Initializing..."; \
-		git submodule update --init; \
-	else \
-		echo "Submodule found successfully"; \
-	fi
+default: build
 
-default: viam-rplidar
-
-all: default
+all: setup build
 
 clean:
 	rm -rf build
@@ -32,7 +24,24 @@ clean-all: clean
 setup: install-dependencies ensure-submodule-initialized
 
 install-dependencies:
-	# setup step for cloud builds
+ifneq (, $(shell which brew))
+	brew update
+	brew install boost wget git abseil ninja pkg-config protobuf
+else ifneq (, $(shell which apt-get))
+	$(warning  "Installing cartographer external dependencies via APT.")
+	$(warning "Packages may be too old to work with this project.")
 	sudo apt-get update
-	sudo ./apt-setup.sh
+	sudo apt-get install -qqy build-essential libabsl-dev libboost-all-dev libgrpc++-dev libprotobuf-dev pkg-config ninja-build \
+		protobuf-compiler-grpc git wget
 	sudo apt-get install -qy cmake
+else
+	$(error "Unsupported system. Only apt and brew currently supported.")
+endif
+
+ensure-submodule-initialized:
+	@if [ ! -d "src/thrid_party/rplidar_sdk" ]; then \
+		echo "Submodule was not found. Initializing..."; \
+		git submodule update --init; \
+	else \
+		echo "Submodule found successfully"; \
+	fi
