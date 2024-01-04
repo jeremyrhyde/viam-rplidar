@@ -1,32 +1,26 @@
-# Prerequisites
-*.d
-
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
+# Binaries for programs and plugins
 *.exe
-*.out
-*.app
+*.exe~
+*.dll
+*.so
+
+*~
+*#
+*.#*
+*.DS_Store
+*.swp
+
+# Generated files and folders
+grpc/
+bin/
+build/
+
+# Code editor settings
+.vscode
+   
+# artifact
+.artifact/cache
+.artifact/data
+
+src/thrid_party
+viam-rplidar
