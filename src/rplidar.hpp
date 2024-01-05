@@ -18,29 +18,23 @@
 #include <viam/sdk/rpc/server.hpp>
 
 // #include "./thrid_party/rplidar_sdk/sdk/include/rplidar.h"
-// #include "./thrid_party/rplidar_sdk/sdk/src/hal/types.h"
-// #include "./thrid_party/rplidar_sdk/sdk/include/rplidar_protocol.h"
-// #include "./thrid_party/rplidar_sdk/sdk/include/rplidar_cmd.h"
-// #include "./thrid_party/rplidar_sdk/sdk/include/rplidar_driver.h"
-
-// /sl_lidar_driver.h"
-// %include "./third_party/rplidar_sdk-release-v2.0.0/sdk/include/rplidar.h"
-// %include "./third_party/rplidar_sdk-release-v2.0.0/sdk/src/hal/types.h"
-// %include "./third_party/rplidar_sdk-release-v2.0.0/sdk/include/rplidar_protocol.h"
-// %include "./third_party/rplidar_sdk-release-v2.0.0/sdk/include/rplidar_cmd.h"
-// %include "./third_party/rplidar_sdk-release-v2.0.0/sdk/include/rplidar_driver.h"
-
-// class rplidar_response_measurement_node_hq_t;
-// namespace rp {
-//   namespace standalone {
-//     namespace rplidar {
-//       class RPlidarDriver;
-//     }
-//   }
-// }
+#include "./thrid_party/rplidar_sdk/sdk/src/hal/types.h"
+#include "./thrid_party/rplidar_sdk/sdk/include/rplidar_protocol.h"
+#include "./thrid_party/rplidar_sdk/sdk/include/rplidar_cmd.h"
+#include "./thrid_party/rplidar_sdk/sdk/include/rplidar_driver.h"
 
 namespace viam {
 namespace rplidar {
+
+// Forward declarations
+class rplidar_response_measurement_node_hq_t;
+namespace rp {
+  namespace standalone {
+    namespace rplidar {
+      class RPlidarDriver;
+    }
+  }
+}
 
 constexpr char kResourceType[] = "RPLidar";
 constexpr char kAPINamespace[] = "viam";
@@ -64,7 +58,7 @@ class RPLidar : public sdk::Camera {
     std::string serial_port = "";
     int serial_baudrate;
     std::string scan_mode = "";
-    // rp::standalone::rplidar::RPlidarDriver *driver = NULL;
+    rp::standalone::rplidar::RPlidarDriver *driver = NULL;
 
     std::tuple<RPLidarProperties, bool, bool> initialize(sdk::ResourceConfig cfg);
 

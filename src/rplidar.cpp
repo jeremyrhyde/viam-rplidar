@@ -78,8 +78,12 @@ sdk::Camera::image_collection RPLidar::get_images() {
 
 // GetPointCloud
 sdk::Camera::point_cloud RPLidar::get_point_cloud(std::string mime_type, const sdk::AttributeMap& extra) {
+    sdk::Camera::point_cloud point_cloud;
+    point_cloud.mime_type = "pointcloud/pcd";
+    std::vector<unsigned char> bytes = {'a', 'b', 'c'};
+    point_cloud.pc = bytes;
     std::cerr << "get_point_cloud not implemented" << std::endl;
-    return sdk::Camera::point_cloud{};
+    return point_cloud;
 }
 
 // GetGeometries

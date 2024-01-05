@@ -5,7 +5,8 @@ project(viam-rplidar
     HOMEPAGE_URL https://github.com/jeremyrhyde/viam-rplidar
     LANGUAGES CXX
 )
-set(CMAKE_CXX_STANDARD 17)
+#set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 include(FetchContent)
 FetchContent_Declare(
@@ -49,7 +50,7 @@ target_compile_options(viamrplidar PRIVATE
 )
 
 # construct the module executable
-#set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wchkp -pedantic")
 
 add_executable(viam-rplidar main.cpp)
