@@ -22,27 +22,34 @@ FetchContent_MakeAvailable(viam-cpp-sdk)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
+find_package(PCL 1.8 REQUIRED)
 
-# The image encoders
-file(GLOB_RECURSE SOURCES 
-    "./thrid_party/rplidar_sdk/sdk/include/*/*.h" 
-    "./thrid_party/rplidar_sdk/sdk/include/*/*.hpp" 
-    "./thrid_party/rplidar_sdk/sdk/src/*/*.c" 
-    "./thrid_party/rplidar_sdk/sdk/src/*/*.cpp"
-)
+include_directories(${PCL_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
+
+file(GLOB SOURCES "./src/thrid_party/rplidar_sdk/sdk/src/rplidar_driver.cpp")
 
 # construct the library
 add_library(viamrplidar ${SOURCES} src/rplidar.cpp)
 target_link_libraries(viamrplidar 
     PUBLIC
         viam-cpp-sdk::viamsdk
+        ${PCL_LIBRARIES}
+    PRIVATE
+        /Users/jeremyrhyde/Development/viam-rplidar/src/thrid_party/rplidar_sdk/output/Darwin/Release/libsl_lidar_sdk.a
 	${CMAKE_DL_LIBS}
 )
+
+target_compile_definitions(viamrplidar PUBLIC _MACOS)
 
 # Add all the flags
 target_compile_features(viamrplidar PUBLIC
     cxx_std_17
 )
+
+target_include_directories(viamrplidar PUBLIC src/thrid_party/rplidar_sdk/sdk/include src/thrid_party/rplidar_sdk/sdk/src)
+
 target_compile_options(viamrplidar PRIVATE 
     -O2 
     # -Wredundant-move 
@@ -55,7 +62,6 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_executable(viam-rplidar main.cpp)
 
-# target_link_libraries(viam-rplidar PRIVATE src/third_party/rplidar_sdk/output/Darwin/Release/libsl_lidar_sdk.a)
 target_link_libraries(viam-rplidar PRIVATE viamrplidar)
 
 target_compile_options(viam-rplidar PRIVATE 

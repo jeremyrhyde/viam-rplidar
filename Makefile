@@ -20,10 +20,12 @@ all: setup build-module
 
 clean:
 	rm -rf build
-	rm -rf viam-rplidar
 
 clean-all: clean
 	git clean -fxd
+
+install:
+	sudo cp ${BUILD_DIR}/viam-rplidar /usr/local/bin/viam-rplidar
 
 setup: install-dependencies submodule-initialized
 

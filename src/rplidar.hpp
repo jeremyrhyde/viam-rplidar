@@ -17,24 +17,10 @@
 #include <viam/sdk/registry/registry.hpp>
 #include <viam/sdk/rpc/server.hpp>
 
-// #include "./thrid_party/rplidar_sdk/sdk/include/rplidar.h"
-#include "./thrid_party/rplidar_sdk/sdk/src/hal/types.h"
-#include "./thrid_party/rplidar_sdk/sdk/include/rplidar_protocol.h"
-#include "./thrid_party/rplidar_sdk/sdk/include/rplidar_cmd.h"
-#include "./thrid_party/rplidar_sdk/sdk/include/rplidar_driver.h"
+#include "rplidar.h"
 
 namespace viam {
 namespace rplidar {
-
-// Forward declarations
-class rplidar_response_measurement_node_hq_t;
-namespace rp {
-  namespace standalone {
-    namespace rplidar {
-      class RPlidarDriver;
-    }
-  }
-}
 
 constexpr char kResourceType[] = "RPLidar";
 constexpr char kAPINamespace[] = "viam";
@@ -46,8 +32,15 @@ struct RPLidarProperties {
     bool enablePointClouds;
 };
 
-// The underlying rplidar loop functions
+size_t default_node_size = 8192;
 
+// The underlying rplidar driver functions
+bool start_motor(rp::standalone::rplidar::RPlidarDriver *driver);
+bool stop_motor(rp::standalone::rplidar::RPlidarDriver *driver);
+
+float get_angle(const rplidar_response_measurement_node_hq_t &node);
+float get_distance(const rplidar_response_measurement_node_hq_t &node);
+float get_quality(const rplidar_response_measurement_node_hq_t &node);
 
 // Module functions
 std::vector<std::string> validate(sdk::ResourceConfig cfg);
@@ -55,12 +48,20 @@ std::vector<std::string> validate(sdk::ResourceConfig cfg);
 // The camera module class and its methods
 class RPLidar : public sdk::Camera {
    private:
-    std::string serial_port = "";
-    int serial_baudrate;
+    std::string serial_port = "/dev/ttyUSB0";
+    float min_range_mm = 0.0;
+
+    int serial_baudrate = 10000000;
+    std::string rplidar_model = "";
     std::string scan_mode = "";
+
     rp::standalone::rplidar::RPlidarDriver *driver = NULL;
 
     std::tuple<RPLidarProperties, bool, bool> initialize(sdk::ResourceConfig cfg);
+    bool connect();
+    bool start();
+    bool start_polling();
+    std::vector<unsigned char> scan(int num_scans);
 
    public:
     explicit RPLidar(sdk::Dependencies deps, sdk::ResourceConfig cfg);
