@@ -1,11 +1,7 @@
 #pragma once
-#include <algorithm>
-#include <condition_variable>
+
 #include <future>
-#include <iostream>
 #include <mutex>
-#include <optional>
-#include <stdexcept>
 #include <thread>
 #include <tuple>
 #include <vector>
@@ -22,22 +18,40 @@
 namespace viam {
 namespace rplidar {
 
+namespace rpsdk = rp::standalone::rplidar;
+
+// Viam resource naming constants 
 constexpr char kResourceType[] = "RPLidar";
 constexpr char kAPINamespace[] = "viam";
 constexpr char kAPIType[] = "camera";
 constexpr char kAPISubtype[] = "rplidar";
 
+// Internal pointcloud and rplidar structs
+struct PointXYZI {
+    float x;
+    float y;
+    float z;
+    float intensity;
+};
+
+struct PointCloudXYZI {
+    int count;
+    std::vector<PointXYZI> points;
+};
 
 struct RPLidarProperties {
     bool enablePointClouds;
 };
 
-size_t default_node_size = 8192;
-
 // The underlying rplidar driver functions
-bool start_motor(rp::standalone::rplidar::RPlidarDriver *driver);
-bool stop_motor(rp::standalone::rplidar::RPlidarDriver *driver);
+bool start_motor(rpsdk::RPlidarDriver *driver);
+bool stop_motor(rpsdk::RPlidarDriver *driver);
 
+// Functions that handle scanning
+PointXYZI create_point(float dist, float angle, float intensity);
+PointCloudXYZI scan(rpsdk::RPlidarDriver *driver, float min_range_mm);
+
+// Math functions
 float get_angle(const rplidar_response_measurement_node_hq_t &node);
 float get_distance(const rplidar_response_measurement_node_hq_t &node);
 float get_quality(const rplidar_response_measurement_node_hq_t &node);
@@ -45,23 +59,30 @@ float get_quality(const rplidar_response_measurement_node_hq_t &node);
 // Module functions
 std::vector<std::string> validate(sdk::ResourceConfig cfg);
 
+size_t default_node_size = 8192;
+
 // The camera module class and its methods
 class RPLidar : public sdk::Camera {
    private:
+    rpsdk::RPlidarDriver *driver = NULL;
     std::string serial_port = "/dev/ttyUSB0";
     float min_range_mm = 0.0;
-
     int serial_baudrate = 10000000;
     std::string rplidar_model = "";
     std::string scan_mode = "";
 
-    rp::standalone::rplidar::RPlidarDriver *driver = NULL;
-
     std::tuple<RPLidarProperties, bool, bool> initialize(sdk::ResourceConfig cfg);
+
     bool connect();
     bool start();
+
     bool start_polling();
-    std::vector<unsigned char> scan(int num_scans);
+    void scanCacheLoop(std::promise<void>& ready);
+    std::atomic<bool> thread_shutdown = false;
+    std::thread cameraThread;
+    
+    std::mutex cache_mutex;
+    PointCloudXYZI cached_pc;
 
    public:
     explicit RPLidar(sdk::Dependencies deps, sdk::ResourceConfig cfg);

@@ -1,23 +1,12 @@
 #include "rplidar.hpp"
 
-#include <arpa/inet.h>
 #include <pthread.h>
 #include <signal.h>
-
-#include <algorithm>
-#include <condition_variable>
-#include <future>
-#include <iostream>
 #include <mutex>
-#include <optional>
-#include <stdexcept>
 #include <thread>
 #include <tuple>
 #include <vector>
 #include <cmath>
-
-#include <pcl/io/pcd_io.h>
-#include <pcl/point_types.h>
 
 #include <viam/sdk/module/service.hpp>
 #include <viam/sdk/registry/registry.hpp>
@@ -33,8 +22,7 @@ std::tuple<RPLidarProperties, bool, bool> RPLidar::initialize(sdk::ResourceConfi
     return {};
 }
 
-// ----------------------------------------- SETUP HELPERS ----------------------------------------
-
+// Motor interface functions : (start, stop)
 bool stop_motor(rp::standalone::rplidar::RPlidarDriver *driver) {
   if (!driver) {
     return false;
@@ -53,6 +41,7 @@ bool start_motor(rp::standalone::rplidar::RPlidarDriver *driver) {
   return true;
 }
 
+// Node interface functions : (angle, dist, quality)
 float get_angle(const rplidar_response_measurement_node_hq_t &node) {
   return node.angle_z_q14 * 90.f / (1 << 14);
 }
@@ -65,8 +54,10 @@ float get_quality(const rplidar_response_measurement_node_hq_t &node) {
   return node.quality >> 2;
 }
 
-pcl::PointXYZI create_point(float dist, float angle, float intensity) {
-    pcl::PointXYZI point;
+// Scan and helper functions to handle pointcloud construction and pcd creation
+// : (create_point, PointCloudXYZI_to_pcd_bytes, scan) 
+PointXYZI create_point(float dist, float angle, float intensity) {
+    PointXYZI point;
     point.x = dist*cos(angle * M_PI / 180);
     point.y = dist*sin(angle * M_PI / 180);
     point.z = 0.0;
@@ -75,9 +66,16 @@ pcl::PointXYZI create_point(float dist, float angle, float intensity) {
     return point;
 }
 
-std::vector<unsigned char> RPLidar::scan(int num_scans) {
+std::vector<unsigned char> PointCloudXYZI_to_pcd_bytes(PointCloudXYZI point_cloud) {
+
+    // MAKE PCD BYTE VECTOR SLICE
+
+    return {};
+}
+
+PointCloudXYZI scan(rpsdk::RPlidarDriver *driver, float min_range_mm) {
     // Get scan nodes
-    size_t count = default_node_size * num_scans;
+    size_t count = default_node_size * 1;
     rplidar_response_measurement_node_hq_t nodes[count * sizeof(rplidar_response_measurement_node_hq_t)];
 
     if (driver->grabScanDataHq(nodes, count) != RESULT_OK) {
@@ -90,14 +88,8 @@ std::vector<unsigned char> RPLidar::scan(int num_scans) {
         return {};
     }
 
-    // Create pointcloud
-    pcl::PointCloud<pcl::PointXYZI> cloud;
-    cloud.width    = 1;
-    cloud.height   = count;
-    cloud.is_dense = true;
-    cloud.resize(cloud.width * cloud.height);
-
     // Loop over pointcloud
+    PointCloudXYZI pc;
     for (int i = 0; i < count; ++i) {
         float dist_value = get_distance(nodes[i]);
         if (dist_value < min_range_mm) {
@@ -106,16 +98,14 @@ std::vector<unsigned char> RPLidar::scan(int num_scans) {
         float angle_value = get_angle(nodes[i]);
         float intensity_value = get_quality(nodes[i]);
 
-        cloud.push_back(create_point(dist_value, angle_value, intensity_value));
+        pc.points.push_back(create_point(dist_value, angle_value, intensity_value));
+        pc.count++;
     }
 
-    std::vector<unsigned char> bytes = {'a', 'b', 'c'};
-
-    return bytes;
+    return pc;
 }
 
-// -------------------------------------------- SETUP -------------------------------------------
-
+// RPLidar Constructor and Destructor : (RPLidar, ~RPLidar)
 RPLidar::RPLidar(sdk::Dependencies deps, viam::sdk::ResourceConfig cfg) : Camera(cfg.name()) {
 
     // Attribute extraction
@@ -161,25 +151,37 @@ RPLidar::RPLidar(sdk::Dependencies deps, viam::sdk::ResourceConfig cfg) : Camera
     // Start the driver
     if (!start()) {
         rpsdk::RPlidarDriver::DisposeDriver(driver);
-        throw std::runtime_error("could not start RPLidat");
+        throw std::runtime_error("could not start RPLidar");
     } else {
         std::cout << "started RPLidar... " << std::endl;
     }
 
     // Start background polling process
-    if (!start_polling()) {
-        rpsdk::RPlidarDriver::DisposeDriver(driver);
-        throw std::runtime_error("could not start background polling process");
-    } else {
-        std::cout << "started polling process... " << std::endl;
-    }
+    // if (!start_polling()) {
+    //     rpsdk::RPlidarDriver::DisposeDriver(driver);
+    //     throw std::runtime_error("could not start background polling process");
+    // } else {
+    //     std::cout << "started polling process... " << std::endl;
+    // }
 }
 
 RPLidar::~RPLidar() {
+    thread_shutdown = true;
+    cameraThread.join();
+
     if (!stop_motor(driver)) {
         std::cerr << "issue occured stopping the motor" << std::endl;
     }
     rpsdk::RPlidarDriver::DisposeDriver(driver);
+}
+
+// Start up functions : (start, connect, scanCacheLoop, start_polling)
+bool RPLidar::start() {
+    if (!start_motor(driver)) {
+         std::cerr << "issue occurred starting motor" << std::endl;
+         return false;
+    }
+    return true;
 }
 
 bool RPLidar::connect() {
@@ -221,22 +223,40 @@ bool RPLidar::connect() {
     return true;
 }
 
-bool RPLidar::start() {
-    if (!start_motor(driver)) {
-         std::cerr << "issue occurred starting motor" << std::endl;
-         return false;
+void RPLidar::scanCacheLoop(std::promise<void>& ready) {
+    bool readyOnce = false;
+
+    while (true) {
+        if (thread_shutdown) {
+            return;
+        }
+        PointCloudXYZI pc = scan(driver, min_range_mm);
+
+        cache_mutex.lock();
+        cached_pc = pc;
+        cache_mutex.unlock();
+
+        if (!readyOnce) {
+            readyOnce = true;
+            ready.set_value();
+        }
     }
 
-    // rp.nodes = gen.New_measurementNodeHqArray(defaultNodeSize)
-    // Perform warm up sequence
-    return true;
+    return;
 }
-
+ 
 bool RPLidar::start_polling() {
+    std::promise<void> ready;
+    cameraThread = std::thread(&RPLidar::scanCacheLoop, this, ref(ready));
+
+    std::cout << "waiting for camera frame loop thread to be ready..." << std::endl;
+
+    ready.get_future().wait();
+
     return true;
 }
 
-// ---------------------------------------- CAMERA METHODS ---------------------------------------
+// Camera Methods
 
 // Reconfigure
 void RPLidar::reconfigure(sdk::Dependencies deps, sdk::ResourceConfig cfg) {
@@ -247,15 +267,22 @@ void RPLidar::reconfigure(sdk::Dependencies deps, sdk::ResourceConfig cfg) {
 // GetPointCloud
 sdk::Camera::point_cloud RPLidar::get_point_cloud(std::string mime_type, const sdk::AttributeMap& extra) {
 
-    std::vector<unsigned char> pcd_bytes = scan(1);
-    if (sizeof(pcd_bytes)) {
+    PointCloudXYZI pc = scan(driver, 1);
+    if (sizeof(pc)) {
         throw std::runtime_error("error no point_cloud data returned from scan");
     }
+
+    // cache_mutex.lock();
+    // if (!cached_pc.count != 0) {
+    //     throw std::runtime_error("no point_cloud data is avialable");
+    // }
+    // PointCloudXYZI pc = cached_pc;
+    // cache_mutex.unlock();
 
     // create point_cloud return message
     sdk::Camera::point_cloud point_cloud;
     point_cloud.mime_type = "pointcloud/pcd";
-    point_cloud.pc = pcd_bytes;
+    point_cloud.pc = PointCloudXYZI_to_pcd_bytes(pc);
 
     std::cout << "returning pointcloud" << std::endl;
     return point_cloud;
