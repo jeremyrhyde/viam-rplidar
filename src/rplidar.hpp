@@ -22,7 +22,7 @@ namespace rpsdk = rp::standalone::rplidar;
 
 // Viam resource naming constants 
 constexpr char kResourceType[] = "RPLidar";
-constexpr char kAPINamespace[] = "viam";
+constexpr char kAPINamespace[] = "jeremyrhyde";
 constexpr char kAPIType[] = "camera";
 constexpr char kAPISubtype[] = "rplidar";
 
@@ -48,34 +48,50 @@ bool start_motor(rpsdk::RPlidarDriver *driver);
 bool stop_motor(rpsdk::RPlidarDriver *driver);
 
 // Functions that handle scanning
-PointXYZI create_point(float dist, float angle, float intensity);
+PointXYZI create_point(float dist, float angle);
 PointCloudXYZI scan(rpsdk::RPlidarDriver *driver, float min_range_mm);
+
+std::string point_to_string(PointXYZI point);
+std::vector<unsigned char> PointCloudXYZI_to_pcd_bytes(PointCloudXYZI point_cloud);
 
 // Math functions
 float get_angle(const rplidar_response_measurement_node_hq_t &node);
 float get_distance(const rplidar_response_measurement_node_hq_t &node);
-float get_quality(const rplidar_response_measurement_node_hq_t &node);
 
 // Module functions
 std::vector<std::string> validate(sdk::ResourceConfig cfg);
 
 size_t default_node_size = 8192;
 
+// Defaults 
+std::string default_serial_port = "/dev/ttyUSB0";
+int default_baudrate = 256000;
+std::map<std::string, int> baudrate_map{
+    {"A1", 256000}, 
+    {"A2", 256000}, 
+    {"A3", 256000}, 
+    {"S1", 256000}, 
+    {"S2", 1000000}, 
+    {"S3", 1000000},
+};
+
 // The camera module class and its methods
 class RPLidar : public sdk::Camera {
    private:
+    std::string serial_port;
+    float min_range_mm;
+    int serial_baudrate;
+    std::string rplidar_model;
+    //std::string scan_mode;
+
     rpsdk::RPlidarDriver *driver = NULL;
-    std::string serial_port = "/dev/ttyUSB0";
-    float min_range_mm = 0.0;
-    int serial_baudrate = 10000000;
-    std::string rplidar_model = "";
-    std::string scan_mode = "";
 
     std::tuple<RPLidarProperties, bool, bool> initialize(sdk::ResourceConfig cfg);
 
     bool connect();
     bool start();
 
+    bool use_caching = false;
     bool start_polling();
     void scanCacheLoop(std::promise<void>& ready);
     std::atomic<bool> thread_shutdown = false;
@@ -83,6 +99,7 @@ class RPLidar : public sdk::Camera {
     
     std::mutex cache_mutex;
     PointCloudXYZI cached_pc;
+    std::vector<unsigned char> cached_pcd;
 
    public:
     explicit RPLidar(sdk::Dependencies deps, sdk::ResourceConfig cfg);

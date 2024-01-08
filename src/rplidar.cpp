@@ -7,6 +7,9 @@
 #include <tuple>
 #include <vector>
 #include <cmath>
+#include <sstream>
+#include <iostream>
+#include <fstream>
 
 #include <viam/sdk/module/service.hpp>
 #include <viam/sdk/registry/registry.hpp>
@@ -41,7 +44,7 @@ bool start_motor(rp::standalone::rplidar::RPlidarDriver *driver) {
   return true;
 }
 
-// Node interface functions : (angle, dist, quality)
+// Node interface functions : (angle, dist)
 float get_angle(const rplidar_response_measurement_node_hq_t &node) {
   return node.angle_z_q14 * 90.f / (1 << 14);
 }
@@ -50,27 +53,46 @@ float get_distance(const rplidar_response_measurement_node_hq_t &node) {
   return node.dist_mm_q2 / 4.0f / 1000; 
 }
 
-float get_quality(const rplidar_response_measurement_node_hq_t &node) {
-  return node.quality >> 2;
-}
-
 // Scan and helper functions to handle pointcloud construction and pcd creation
-// : (create_point, PointCloudXYZI_to_pcd_bytes, scan) 
-PointXYZI create_point(float dist, float angle, float intensity) {
+// : (create_point, point_to_string, PointCloudXYZI_to_pcd_bytes, scan) 
+PointXYZI create_point(float dist, float angle) {
     PointXYZI point;
     point.x = dist*cos(angle * M_PI / 180);
     point.y = dist*sin(angle * M_PI / 180);
     point.z = 0.0;
-    point.intensity = intensity;
-
+    point.intensity = 16711680;
     return point;
+}
+
+std::string point_to_string(PointXYZI point) {
+    std::stringstream output;
+    output << point.x << " " << point.y << " " << point.z << " " << point.intensity << "\n";
+    return output.str();
 }
 
 std::vector<unsigned char> PointCloudXYZI_to_pcd_bytes(PointCloudXYZI point_cloud) {
 
-    // MAKE PCD BYTE VECTOR SLICE
+    // Construct PCD header with the number of points in given pointcloud
+    std::stringstream header;
+    header << "VERSION .7 \n";
+    header << "FIELDS x y z rgb \n";
+    header << "SIZE 4 4 4 4 \n";
+    header << "TYPE F F F I \n";
+    header << "COUNT 1 1 1 1 \n";
+    header << "WIDTH " << std::to_string(point_cloud.count) << " \n";
+    header << "HEIGHT 1 \n";
+    header << "VIEWPOINT 0 0 0 1 0 0 0 \n";
+    header << "POINTS " << std::to_string(point_cloud.count) << " \n";
+    header << "DATA ascii \n";
 
-    return {};
+    // Create PCD with header and points
+    std::string pcd = header.str();
+    for (int i = 0; i < point_cloud.points.size(); i++) {
+        pcd.append(point_to_string(point_cloud.points[i]));
+    }
+
+    std::vector<unsigned char> pcd_bytes(pcd.begin(), pcd.end());
+    return pcd_bytes;
 }
 
 PointCloudXYZI scan(rpsdk::RPlidarDriver *driver, float min_range_mm) {
@@ -90,22 +112,37 @@ PointCloudXYZI scan(rpsdk::RPlidarDriver *driver, float min_range_mm) {
 
     // Loop over pointcloud
     PointCloudXYZI pc;
+    pc.count = 0;
     for (int i = 0; i < count; ++i) {
         float dist_value = get_distance(nodes[i]);
         if (dist_value < min_range_mm) {
             continue;
         }
         float angle_value = get_angle(nodes[i]);
-        float intensity_value = get_quality(nodes[i]);
 
-        pc.points.push_back(create_point(dist_value, angle_value, intensity_value));
+        pc.points.push_back(create_point(dist_value, angle_value));
         pc.count++;
     }
 
     return pc;
 }
 
-// RPLidar Constructor and Destructor : (RPLidar, ~RPLidar)
+// RPLidar Constructor and Destructor : (validate, RPLidar, ~RPLidar)
+std::vector<std::string> validate(sdk::ResourceConfig cfg){
+    auto attrs = cfg.attributes();
+    if (attrs->count("min_range_mm") == 1) {
+        std::shared_ptr<sdk::ProtoType> min_range_mm_proto = attrs->at("min_range_mm");
+        auto min_range_mm_value = min_range_mm_proto->proto_value();
+        if (min_range_mm_value.has_number_value()) {
+            int min_range_mm_num = static_cast<float>(min_range_mm_value.number_value());
+            if (min_range_mm_num < 0) {
+                throw std::invalid_argument("min_range_mm cannot be negative");
+            }
+        }
+    }   
+    return {};
+}
+
 RPLidar::RPLidar(sdk::Dependencies deps, viam::sdk::ResourceConfig cfg) : Camera(cfg.name()) {
 
     // Attribute extraction
@@ -120,7 +157,38 @@ RPLidar::RPLidar(sdk::Dependencies deps, viam::sdk::ResourceConfig cfg) : Camera
             std::cout << "serial_path found, using " << serial_port << std::endl;
         }
     } else {
-        std::cout << "no serial_path given, using default " << serial_port << std::endl;
+        serial_port = default_serial_port;
+        std::cout << "no serial_path given, attempting to connect using default: " << serial_port << std::endl;
+    }
+
+    if (attrs->count("model") == 1) {
+        std::shared_ptr<sdk::ProtoType> model_proto = attrs->at("model");
+        auto model_value = model_proto->proto_value();
+        if (model_value.has_string_value()) {
+            std::string model_str = static_cast<std::string>(model_value.string_value());
+            rplidar_model = model_str;
+            std::cout << "rplidar_model found, using " << rplidar_model << std::endl;
+        }
+    } else {
+        std::cout << "no rplidar_model given" << std::endl;
+    }
+
+    if (attrs->count("serial_baudrate") == 1) {
+        std::shared_ptr<sdk::ProtoType> serial_baudrate_proto = attrs->at("serial_baudrate");
+        auto serial_baudrate_value = serial_baudrate_proto->proto_value();
+        if (serial_baudrate_value.has_number_value()) {
+            int serial_baudrate_num = static_cast<int>(serial_baudrate_value.number_value());
+            serial_baudrate = serial_baudrate_num;
+            std::cout << "serial_baudrate_num found, attempting to connect using " << serial_baudrate_num << std::endl;
+        }
+    } else {
+        if (rplidar_model != "") {
+            serial_baudrate = baudrate_map[rplidar_model];
+            std::cout << "no serial_baudrate given using default for given model: " << serial_baudrate << std::endl;
+        } else {
+            serial_baudrate = default_baudrate;
+            std::cout << "no serial_baudrate or model given, will attempt to connect using default [Baudrate: " << serial_baudrate << "]" << std::endl;
+        }
     }
 
     if (attrs->count("min_range_mm") == 1) {
@@ -130,7 +198,20 @@ RPLidar::RPLidar(sdk::Dependencies deps, viam::sdk::ResourceConfig cfg) : Camera
             float min_range_mm_num = static_cast<float>(min_range_mm_value.number_value());
             min_range_mm = min_range_mm_num;
         }
+    } else {
+        std::cout << "no min_range_mm given" << std::endl;
     }
+
+    if (attrs->count("use_caching") == 1) {
+        std::shared_ptr<sdk::ProtoType> use_caching_proto = attrs->at("use_caching");
+        auto use_caching_value = use_caching_proto->proto_value();
+        if (use_caching_value.has_bool_value()) {
+            float use_caching_bool = static_cast<bool>(use_caching_value.bool_value());
+            use_caching = use_caching_bool;
+        }
+    } 
+
+    std::cout << "use_caching set to " << use_caching << std::endl;
 
     // Create the driver
     driver = rpsdk::RPlidarDriver::CreateDriver(rpsdk::DRIVER_TYPE_SERIALPORT);
@@ -143,7 +224,7 @@ RPLidar::RPLidar(sdk::Dependencies deps, viam::sdk::ResourceConfig cfg) : Camera
     // Connect to the driver
     if (!connect()) {
         rpsdk::RPlidarDriver::DisposeDriver(driver);
-        throw std::runtime_error("could not find RPLidar at specificed serial_path: " + serial_port);
+        throw std::runtime_error("could not find RPLidar at specified serial_path: " + serial_port << " with [Baudrate: " << serial_baudrate << "]");
     } else {
         std::cout << "found RPLidar (" << rplidar_model << ") at serial_path " << serial_port << " [Baudrate: " << serial_baudrate << "]" << std::endl;
     }
@@ -157,12 +238,14 @@ RPLidar::RPLidar(sdk::Dependencies deps, viam::sdk::ResourceConfig cfg) : Camera
     }
 
     // Start background polling process
-    // if (!start_polling()) {
-    //     rpsdk::RPlidarDriver::DisposeDriver(driver);
-    //     throw std::runtime_error("could not start background polling process");
-    // } else {
-    //     std::cout << "started polling process... " << std::endl;
-    // }
+    if (use_caching) {
+        if (!start_polling()) {
+            rpsdk::RPlidarDriver::DisposeDriver(driver);
+            throw std::runtime_error("could not start background polling process");
+        } else {
+            std::cout << "started polling process... " << std::endl;
+        }
+    }
 }
 
 RPLidar::~RPLidar() {
@@ -170,7 +253,7 @@ RPLidar::~RPLidar() {
     cameraThread.join();
 
     if (!stop_motor(driver)) {
-        std::cerr << "issue occured stopping the motor" << std::endl;
+        std::cerr << "issue occurred stopping the motor" << std::endl;
     }
     rpsdk::RPlidarDriver::DisposeDriver(driver);
 }
@@ -205,7 +288,7 @@ bool RPLidar::connect() {
         return false;
     }
 
-    rplidar_model = devinfo.model;
+    //rplidar_model = devinfo.model;
 
     // Check device health
     rplidar_response_device_health_t healthinfo;
@@ -256,7 +339,7 @@ bool RPLidar::start_polling() {
     return true;
 }
 
-// Camera Methods
+// ------------------------------------- CAMERA METHODS ----------------------------------------------
 
 // Reconfigure
 void RPLidar::reconfigure(sdk::Dependencies deps, sdk::ResourceConfig cfg) {
@@ -267,24 +350,20 @@ void RPLidar::reconfigure(sdk::Dependencies deps, sdk::ResourceConfig cfg) {
 // GetPointCloud
 sdk::Camera::point_cloud RPLidar::get_point_cloud(std::string mime_type, const sdk::AttributeMap& extra) {
 
-    PointCloudXYZI pc = scan(driver, 1);
-    if (sizeof(pc)) {
-        throw std::runtime_error("error no point_cloud data returned from scan");
+    PointCloudXYZI pc;
+    if (use_caching) {
+        cache_mutex.lock();
+        pc = cached_pc;
+        cache_mutex.unlock();  
+    } else {
+        pc = scan(driver, min_range_mm);
     }
-
-    // cache_mutex.lock();
-    // if (!cached_pc.count != 0) {
-    //     throw std::runtime_error("no point_cloud data is avialable");
-    // }
-    // PointCloudXYZI pc = cached_pc;
-    // cache_mutex.unlock();
 
     // create point_cloud return message
     sdk::Camera::point_cloud point_cloud;
     point_cloud.mime_type = "pointcloud/pcd";
     point_cloud.pc = PointCloudXYZI_to_pcd_bytes(pc);
 
-    std::cout << "returning pointcloud" << std::endl;
     return point_cloud;
 }
 
@@ -294,8 +373,7 @@ sdk::Camera::properties RPLidar::get_properties() {
     // create properties return message
     struct sdk::Camera::properties prop;
     prop.supports_pcd = true;
-
-    std::cout << "returning properties" << std::endl;
+ 
     return prop;
 }
 

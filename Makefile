@@ -26,6 +26,7 @@ clean-all: clean
 
 install:
 	sudo cp ${BUILD_DIR}/viam-rplidar /usr/local/bin/viam-rplidar
+	sudo chmod 777 /usr/local/bin/viam-rplidar
 
 setup: install-dependencies submodule-initialized
 

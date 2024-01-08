@@ -37,7 +37,7 @@ target_link_libraries(viamrplidar
         viam-cpp-sdk::viamsdk
         ${PCL_LIBRARIES}
     PRIVATE
-        /Users/jeremyrhyde/Development/viam-rplidar/src/thrid_party/rplidar_sdk/output/Darwin/Release/libsl_lidar_sdk.a
+        /Users/jeremyhyde/Development/viam-rplidar/src/thrid_party/rplidar_sdk/output/Darwin/Release/libsl_lidar_sdk.a
 	${CMAKE_DL_LIBS}
 )
 
