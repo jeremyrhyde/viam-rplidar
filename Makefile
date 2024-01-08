@@ -52,7 +52,7 @@ endif
 submodule-initialized:
 	@if [ ! -d "src/third_party/rplidar_sdk" ]; then \
 		echo "Submodule was not found. Initializing..."; \
-		git submodule update --init; \
+		git submodule update --init --recursive; \
 	else \
 		echo "Submodule found successfully"; \
 	fi

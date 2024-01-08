@@ -54,7 +54,7 @@ The following attributes are available:
 
 ## Known Supported Hardware
 
-Support for the following RPLiDAR hardware is provided in through this module. The table is not complete and subject to change. In order to test out the module for your specific setup, it is recommended you run the integration tests provided.
+Support for the following RPLiDAR hardware is provided in this module. The table is not complete and subject to change. In order to test out the module for your specific setup, it is recommended you run the integration tests provided.
 
 | Devices             | Mac OSX |  Linux  |
 |---------------------|---------|---------|
@@ -68,11 +68,11 @@ Support for the following RPLiDAR hardware is provided in through this module. T
 
 ## Building The Module
 
-This module is available for development on linux and darwin OS systems. To build the module from scratch run:
+This module is available for development on Linux and Darwin OS systems. To build the module from scratch run:
 
 ```
 make setup
 make build-module
 ```
 
-once this is complete, a module will be available in the local build folder (`/build/viam-rplidar`). This can be copied to your `/usr/local/bin` folder and made an executable via `make install`. Note: any other folder locations in your path can be used for this module. 
+once this is complete, a module will be available in the local build folder (`/build/viam-rplidar`). This can be copied to your `/usr/local/bin` folder and made executable via `make install`. Note: any other folder locations in your path can be used for this module. 
