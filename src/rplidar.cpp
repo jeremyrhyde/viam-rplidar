@@ -314,11 +314,12 @@ void RPLidar::scanCacheLoop(std::promise<void>& ready) {
             return;
         }
         PointCloudXYZI pc = scan(driver, min_range_mm);
-
-        cache_mutex.lock();
-        cached_pc = pc;
-        cache_mutex.unlock();
-
+        {
+            std::unique_lock<std::mutex> lock(cache_mutex);
+            cached_pc = pc;
+        }
+        
+        // tell the outside function, the thread is ready and has completed its first loop
         if (!readyOnce) {
             readyOnce = true;
             ready.set_value();
@@ -352,9 +353,10 @@ sdk::Camera::point_cloud RPLidar::get_point_cloud(std::string mime_type, const s
     // Grab point cloud from cache or call scan directly
     PointCloudXYZI pc;
     if (use_caching) {
-        cache_mutex.lock();
-        pc = cached_pc;
-        cache_mutex.unlock();  
+        {
+            std::unique_lock<std::mutex> lock(cache_mutex);
+            pc = cached_pc;
+        }
     } else {
         pc = scan(driver, min_range_mm);
     }

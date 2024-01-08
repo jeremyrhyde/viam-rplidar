@@ -22,8 +22,8 @@ clean:
 	rm -rf build
 
 clean-sdk:
-	rm -rf src/thrid_party/rplidar_sdk/obj
-	rm -rf src/thrid_party/rplidar_sdk/output
+	rm -rf src/third_party/rplidar_sdk/obj
+	rm -rf src/third_party/rplidar_sdk/output
 
 clean-all: clean clean-sdk
 	git clean -fxd
@@ -33,7 +33,7 @@ install:
 	sudo chmod 777 /usr/local/bin/viam-rplidar
 
 setup: install-dependencies submodule-initialized
-	cd src/thrid_party/rplidar_sdk && $(MAKE) all
+	cd src/third_party/rplidar_sdk && $(MAKE) all
 
 install-dependencies:
 ifneq (, $(shell which brew))
@@ -50,7 +50,7 @@ else
 endif
 
 submodule-initialized:
-	@if [ ! -d "src/thrid_party/rplidar_sdk" ]; then \
+	@if [ ! -d "src/third_party/rplidar_sdk" ]; then \
 		echo "Submodule was not found. Initializing..."; \
 		git submodule update --init; \
 	else \

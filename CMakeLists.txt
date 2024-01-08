@@ -22,7 +22,7 @@ FetchContent_MakeAvailable(viam-cpp-sdk)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-file(GLOB SOURCES "./src/thrid_party/rplidar_sdk/sdk/src/rplidar_driver.cpp")
+file(GLOB SOURCES "./src/third_party/rplidar_sdk/sdk/src/rplidar_driver.cpp")
 
 # construct the library
 add_library(viamrplidar ${SOURCES} src/rplidar.cpp)
@@ -30,7 +30,7 @@ target_link_libraries(viamrplidar
     PUBLIC
         viam-cpp-sdk::viamsdk
     PRIVATE
-        /Users/jeremyhyde/Development/viam-rplidar/src/thrid_party/rplidar_sdk/output/Darwin/Release/libsl_lidar_sdk.a
+        ${CMAKE_SOURCE_DIR}/src/third_party/rplidar_sdk/output/Darwin/Release/libsl_lidar_sdk.a
 	${CMAKE_DL_LIBS}
 )
 
@@ -41,7 +41,7 @@ target_compile_features(viamrplidar PUBLIC
     cxx_std_17
 )
 
-target_include_directories(viamrplidar PUBLIC src/thrid_party/rplidar_sdk/sdk/include src/thrid_party/rplidar_sdk/sdk/src)
+target_include_directories(viamrplidar PUBLIC src/third_party/rplidar_sdk/sdk/include src/third_party/rplidar_sdk/sdk/src)
 
 target_compile_options(viamrplidar PRIVATE 
     -O2 
