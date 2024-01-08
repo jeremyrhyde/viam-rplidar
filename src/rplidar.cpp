@@ -21,8 +21,8 @@ namespace rplidar {
 
 namespace rpsdk = rp::standalone::rplidar;
 
-std::tuple<RPLidarProperties, bool, bool> RPLidar::initialize(sdk::ResourceConfig cfg) {
-    return {};
+void RPLidar::initialize(sdk::ResourceConfig cfg) {
+    return;
 }
 
 // Motor interface functions : (start, stop)
@@ -224,7 +224,7 @@ RPLidar::RPLidar(sdk::Dependencies deps, viam::sdk::ResourceConfig cfg) : Camera
     // Connect to the driver
     if (!connect()) {
         rpsdk::RPlidarDriver::DisposeDriver(driver);
-        throw std::runtime_error("could not find RPLidar at specified serial_path: " + serial_port << " with [Baudrate: " << serial_baudrate << "]");
+        throw std::runtime_error("could not find RPLidar at specified serial_path: " + serial_port + " with [Baudrate: " + std::to_string(serial_baudrate) + "]");
     } else {
         std::cout << "found RPLidar (" << rplidar_model << ") at serial_path " << serial_port << " [Baudrate: " << serial_baudrate << "]" << std::endl;
     }
@@ -349,7 +349,7 @@ void RPLidar::reconfigure(sdk::Dependencies deps, sdk::ResourceConfig cfg) {
 
 // GetPointCloud
 sdk::Camera::point_cloud RPLidar::get_point_cloud(std::string mime_type, const sdk::AttributeMap& extra) {
-
+    // Grab point cloud from cache or call scan directly
     PointCloudXYZI pc;
     if (use_caching) {
         cache_mutex.lock();
@@ -359,7 +359,7 @@ sdk::Camera::point_cloud RPLidar::get_point_cloud(std::string mime_type, const s
         pc = scan(driver, min_range_mm);
     }
 
-    // create point_cloud return message
+    // Create point_cloud return message
     sdk::Camera::point_cloud point_cloud;
     point_cloud.mime_type = "pointcloud/pcd";
     point_cloud.pc = PointCloudXYZI_to_pcd_bytes(pc);
@@ -370,7 +370,7 @@ sdk::Camera::point_cloud RPLidar::get_point_cloud(std::string mime_type, const s
 // GetProperties
 sdk::Camera::properties RPLidar::get_properties() {
 
-    // create properties return message
+    // Create properties return message
     struct sdk::Camera::properties prop;
     prop.supports_pcd = true;
  

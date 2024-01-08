@@ -21,7 +21,11 @@ all: setup build-module
 clean:
 	rm -rf build
 
-clean-all: clean
+clean-sdk:
+	rm -rf src/thrid_party/rplidar_sdk/obj
+	rm -rf src/thrid_party/rplidar_sdk/output
+
+clean-all: clean clean-sdk
 	git clean -fxd
 
 install:
@@ -29,6 +33,7 @@ install:
 	sudo chmod 777 /usr/local/bin/viam-rplidar
 
 setup: install-dependencies submodule-initialized
+	cd src/thrid_party/rplidar_sdk && $(MAKE) all
 
 install-dependencies:
 ifneq (, $(shell which brew))

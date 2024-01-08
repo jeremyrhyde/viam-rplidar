@@ -6,7 +6,6 @@
 using namespace viam::sdk;
 
 int main(int argc, char* argv[]) {
-    std::cout << "hi im paul" << std::endl;
     std::shared_ptr<ModelRegistration> mr = std::make_shared<ModelRegistration>(
         Camera::static_api(), Model{
             viam::rplidar::kAPINamespace, 

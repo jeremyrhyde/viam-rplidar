@@ -21,7 +21,6 @@ namespace rplidar {
 namespace rpsdk = rp::standalone::rplidar;
 
 // Viam resource naming constants 
-constexpr char kResourceType[] = "RPLidar";
 constexpr char kAPINamespace[] = "jeremyrhyde";
 constexpr char kAPIType[] = "camera";
 constexpr char kAPISubtype[] = "rplidar";
@@ -37,10 +36,6 @@ struct PointXYZI {
 struct PointCloudXYZI {
     int count;
     std::vector<PointXYZI> points;
-};
-
-struct RPLidarProperties {
-    bool enablePointClouds;
 };
 
 // The underlying rplidar driver functions
@@ -86,7 +81,7 @@ class RPLidar : public sdk::Camera {
 
     rpsdk::RPlidarDriver *driver = NULL;
 
-    std::tuple<RPLidarProperties, bool, bool> initialize(sdk::ResourceConfig cfg);
+    void initialize(sdk::ResourceConfig cfg);
 
     bool connect();
     bool start();
