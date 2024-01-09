@@ -30,11 +30,15 @@ target_link_libraries(viamrplidar
     PUBLIC
         viam-cpp-sdk::viamsdk
     PRIVATE
-        ${CMAKE_SOURCE_DIR}/src/third_party/rplidar_sdk/output/Darwin/Release/libsl_lidar_sdk.a
+        ${CMAKE_SOURCE_DIR}/src/third_party/rplidar_sdk/output/${CMAKE_SYSTEM_NAME}/Release/libsl_lidar_sdk.a
 	${CMAKE_DL_LIBS}
 )
 
-target_compile_definitions(viamrplidar PUBLIC _MACOS)
+if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    target_compile_definitions(viamrplidar PUBLIC _MACOS)
+else()
+    target_compile_definitions(viamrplidar PUBLIC _LINUX)
+endif()
 
 # Add all the flags
 target_compile_features(viamrplidar PUBLIC

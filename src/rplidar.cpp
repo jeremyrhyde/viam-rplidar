@@ -162,15 +162,7 @@ void RPLidar::initialize(sdk::ResourceConfig cfg) {
         std::cout << "reinitializing, restarting driver" << std::endl;
         {
             // wait until frameLoop is stopped
-            std::unique_lock<std::mutex> lock(reconfiguration_mutex);
-            thread_shutdown = true;
-            cv.wait(lock, [this] { return !(isRunning); });
-            cameraThread.join();
-
-            if (!stop_motor(driver)) {
-                std::cerr << "issue occurred stopping the motor" << std::endl;
-            }
-            rpsdk::RPlidarDriver::DisposeDriver(driver);
+            closeResources();
         }
     }
 
@@ -281,7 +273,11 @@ void RPLidar::initialize(sdk::ResourceConfig cfg) {
 RPLidar::~RPLidar() {
     if (!this->driver) return;
 
-    std::unique_lock<std::mutex> lock(this->reconfiguration_mutex);
+    closeResources();
+}
+
+void RPLidar::closeResources() {
+    std::unique_lock<std::mutex> lock(reconfiguration_mutex);
     thread_shutdown = true;
     cv.wait(lock, [this] { return !(isRunning); });
     cameraThread.join();

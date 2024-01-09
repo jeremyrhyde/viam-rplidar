@@ -84,6 +84,7 @@ class RPLidar : public sdk::Camera {
     void initialize(sdk::ResourceConfig cfg);
     bool connect();
     bool start();
+    void closeResources();
     
     std::mutex cache_mutex;
     PointCloudXYZI cached_pc;
