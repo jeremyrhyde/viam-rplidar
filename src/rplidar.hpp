@@ -74,27 +74,29 @@ std::map<std::string, int> baudrate_map{
 class RPLidar : public sdk::Camera {
    private:
     std::string serial_port;
+    bool use_caching = false;
     float min_range_mm;
     int serial_baudrate;
     std::string rplidar_model;
-    //std::string scan_mode;
 
     rpsdk::RPlidarDriver *driver = NULL;
 
     void initialize(sdk::ResourceConfig cfg);
-
     bool connect();
     bool start();
-
-    bool use_caching = false;
-    bool start_polling();
-    void scanCacheLoop(std::promise<void>& ready);
-    std::atomic<bool> thread_shutdown = false;
-    std::thread cameraThread;
     
     std::mutex cache_mutex;
     PointCloudXYZI cached_pc;
     std::vector<unsigned char> cached_pcd;
+
+    std::thread cameraThread;
+    bool start_polling();
+    void scanCacheLoop(std::promise<void>& ready);
+
+    std::mutex reconfiguration_mutex;
+    std::atomic<bool> isRunning = false;
+    std::atomic<bool> thread_shutdown = false;
+    std::condition_variable cv;
 
    public:
     explicit RPLidar(sdk::Dependencies deps, sdk::ResourceConfig cfg);

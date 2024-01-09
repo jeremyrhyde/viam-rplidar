@@ -21,10 +21,6 @@ namespace rplidar {
 
 namespace rpsdk = rp::standalone::rplidar;
 
-void RPLidar::initialize(sdk::ResourceConfig cfg) {
-    return;
-}
-
 // Motor interface functions : (start, stop)
 bool stop_motor(rp::standalone::rplidar::RPlidarDriver *driver) {
   if (!driver) {
@@ -143,7 +139,40 @@ std::vector<std::string> validate(sdk::ResourceConfig cfg){
     return {};
 }
 
+// Reconfigure
+void RPLidar::reconfigure(sdk::Dependencies deps, sdk::ResourceConfig cfg) {
+    try {
+        initialize(cfg);
+    } catch (const std::exception& e) {
+        throw std::runtime_error("failed to reconfigure realsense: " + std::string(e.what()));
+    }
+    return;
+}
+
 RPLidar::RPLidar(sdk::Dependencies deps, viam::sdk::ResourceConfig cfg) : Camera(cfg.name()) {
+    try {
+        initialize(cfg);
+    } catch (const std::exception& e) {
+        throw std::runtime_error("failed to initialize rplidar: " + std::string(e.what()));
+    }
+}
+
+void RPLidar::initialize(sdk::ResourceConfig cfg) {
+    if (driver != nullptr) {
+        std::cout << "reinitializing, restarting driver" << std::endl;
+        {
+            // wait until frameLoop is stopped
+            std::unique_lock<std::mutex> lock(reconfiguration_mutex);
+            thread_shutdown = true;
+            cv.wait(lock, [this] { return !(isRunning); });
+            cameraThread.join();
+
+            if (!stop_motor(driver)) {
+                std::cerr << "issue occurred stopping the motor" << std::endl;
+            }
+            rpsdk::RPlidarDriver::DisposeDriver(driver);
+        }
+    }
 
     // Attribute extraction
     auto attrs = cfg.attributes();
@@ -246,10 +275,15 @@ RPLidar::RPLidar(sdk::Dependencies deps, viam::sdk::ResourceConfig cfg) : Camera
             std::cout << "started polling process... " << std::endl;
         }
     }
+    return;
 }
 
 RPLidar::~RPLidar() {
+    if (!this->driver) return;
+
+    std::unique_lock<std::mutex> lock(this->reconfiguration_mutex);
     thread_shutdown = true;
+    cv.wait(lock, [this] { return !(isRunning); });
     cameraThread.join();
 
     if (!stop_motor(driver)) {
@@ -309,9 +343,16 @@ bool RPLidar::connect() {
 void RPLidar::scanCacheLoop(std::promise<void>& ready) {
     bool readyOnce = false;
 
+    {
+        std::lock_guard<std::mutex> lock(reconfiguration_mutex);
+        isRunning = true;
+        thread_shutdown = false;
+    }
+
     while (true) {
         if (thread_shutdown) {
-            return;
+            std::cout << "exiting of loop" << std::endl;
+            break;
         }
         PointCloudXYZI pc = scan(driver, min_range_mm);
         {
@@ -326,6 +367,12 @@ void RPLidar::scanCacheLoop(std::promise<void>& ready) {
         }
     }
 
+    {
+        std::lock_guard<std::mutex> lock(reconfiguration_mutex);
+        isRunning = false;
+    }   
+
+    cv.notify_all();
     return;
 }
  
@@ -341,12 +388,6 @@ bool RPLidar::start_polling() {
 }
 
 // ------------------------------------- CAMERA METHODS ----------------------------------------------
-
-// Reconfigure
-void RPLidar::reconfigure(sdk::Dependencies deps, sdk::ResourceConfig cfg) {
-    std::cerr << "reconfigure not implemented" << std::endl;
-    return;
-}
 
 // GetPointCloud
 sdk::Camera::point_cloud RPLidar::get_point_cloud(std::string mime_type, const sdk::AttributeMap& extra) {
