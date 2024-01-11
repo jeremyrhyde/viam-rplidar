@@ -49,11 +49,11 @@ float get_distance(const rplidar_response_measurement_node_hq_t &node) {
   return node.dist_mm_q2 / 4.0f / 1000; 
 }
 
-// Scan and helper functions to handle pointcloud construction and pcd creation
+// Scan and helper functions to handle point cloud construction and pcd creation
 // : (create_point, point_to_string, PointCloudXYZI_to_pcd_bytes, scan) 
 PointXYZI create_point(float dist, float angle) {
     PointXYZI point;
-    point.x = dist*cos(angle * M_PI / 180);
+    point.x = -1*dist*cos(angle * M_PI / 180);
     point.y = dist*sin(angle * M_PI / 180);
     point.z = 0.0;
     point.intensity = 16711680;
@@ -67,7 +67,6 @@ std::string point_to_string(PointXYZI point) {
 }
 
 std::vector<unsigned char> PointCloudXYZI_to_pcd_bytes(PointCloudXYZI point_cloud) {
-
     // Construct PCD header with the number of points in given pointcloud
     std::stringstream header;
     header << "VERSION .7 \n";
@@ -123,7 +122,7 @@ PointCloudXYZI scan(rpsdk::RPlidarDriver *driver, float min_range_mm) {
     return pc;
 }
 
-// RPLidar Constructor and Destructor : (validate, RPLidar, ~RPLidar)
+// RPLidar Constructor and Destructor : (validate, RPLidar, ~RPLidar, closeResources)
 std::vector<std::string> validate(sdk::ResourceConfig cfg){
     auto attrs = cfg.attributes();
     if (attrs->count("min_range_mm") == 1) {
@@ -139,16 +138,6 @@ std::vector<std::string> validate(sdk::ResourceConfig cfg){
     return {};
 }
 
-// Reconfigure
-void RPLidar::reconfigure(sdk::Dependencies deps, sdk::ResourceConfig cfg) {
-    try {
-        initialize(cfg);
-    } catch (const std::exception& e) {
-        throw std::runtime_error("failed to reconfigure realsense: " + std::string(e.what()));
-    }
-    return;
-}
-
 RPLidar::RPLidar(sdk::Dependencies deps, viam::sdk::ResourceConfig cfg) : Camera(cfg.name()) {
     try {
         initialize(cfg);
@@ -160,10 +149,7 @@ RPLidar::RPLidar(sdk::Dependencies deps, viam::sdk::ResourceConfig cfg) : Camera
 void RPLidar::initialize(sdk::ResourceConfig cfg) {
     if (driver != nullptr) {
         std::cout << "reinitializing, restarting driver" << std::endl;
-        {
-            // wait until frameLoop is stopped
-            closeResources();
-        }
+        closeResources();
     }
 
     // Attribute extraction
@@ -301,7 +287,6 @@ bool RPLidar::connect() {
     // connect
     if (IS_FAIL(driver->connect(serial_port.c_str(), (_u32)serial_baudrate))) {
         rp::standalone::rplidar::RPlidarDriver::DisposeDriver(driver);
-        
     }
 
     u_result op_result;
@@ -384,6 +369,16 @@ bool RPLidar::start_polling() {
 }
 
 // ------------------------------------- CAMERA METHODS ----------------------------------------------
+
+// Reconfigure
+void RPLidar::reconfigure(sdk::Dependencies deps, sdk::ResourceConfig cfg) {
+    try {
+        initialize(cfg);
+    } catch (const std::exception& e) {
+        throw std::runtime_error("failed to reconfigure realsense: " + std::string(e.what()));
+    }
+    return;
+}
 
 // GetPointCloud
 sdk::Camera::point_cloud RPLidar::get_point_cloud(std::string mime_type, const sdk::AttributeMap& extra) {

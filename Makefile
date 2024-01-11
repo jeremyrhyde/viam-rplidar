@@ -12,7 +12,7 @@ format: src/*.cpp src/*.hpp test/*.cpp
 
 build-module:
 	cmake -B $(BUILD_DIR) -G Ninja ${EXTRA_CMAKE_FLAGS} && \
-	cmake --build $(BUILD_DIR)
+	cmake --build $(BUILD_DIR) -j 2
 
 default: build-module
 
@@ -56,3 +56,6 @@ submodule-initialized:
 	else \
 		echo "Submodule found successfully"; \
 	fi
+
+module.tar.gz: setup build
+	tar czf $@ *.sh build

@@ -1,0 +1,13 @@
+{
+  "module_id": "jeremyrhyde:viam-rplidar",
+  "visibility": "private",
+  "url": "https://github.com/jeremyrhyde/viam-rplidar",
+  "description": "C++ module for RPLIDAR",
+  "models": [
+    {
+      "api": "rdk:component:camera",
+      "model": "jeremyrhyde:camera:rplidar"
+    }
+  ],
+  "entrypoint": "run.sh"
+}

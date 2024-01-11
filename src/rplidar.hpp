@@ -62,7 +62,7 @@ size_t default_node_size = 8192;
 std::string default_serial_port = "/dev/ttyUSB0";
 int default_baudrate = 256000;
 std::map<std::string, int> baudrate_map{
-    {"A1", 256000}, 
+    {"A1", 115200}, 
     {"A2", 256000}, 
     {"A3", 256000}, 
     {"S1", 256000}, 
