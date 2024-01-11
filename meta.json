@@ -1,6 +1,6 @@
 {
   "module_id": "jeremyrhyde:viam-rplidar",
-  "visibility": "private",
+  "visibility": "public",
   "url": "https://github.com/jeremyrhyde/viam-rplidar",
   "description": "C++ module for RPLIDAR",
   "models": [
@@ -9,5 +9,9 @@
       "model": "jeremyrhyde:camera:rplidar"
     }
   ],
-  "entrypoint": "run.sh"
+  "entrypoint": "run.sh",
+  "build": {
+    "build": "make module.tar.gz",
+    "arch" : ["linux/amd64", "linux/arm64", "darwin/arm64"]
+  }
 }

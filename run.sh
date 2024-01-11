@@ -6,6 +6,6 @@ set -euo pipefail
 
 cd $(dirname $0)
 # get bundled .so files from this directory
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH-}:$PWD/build/$(uname -s)-$(uname -m)/
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH-}:$PWD
 
-exec ./build/$(uname -s)-$(uname -m)/viam-rplidar $@
+exec ./viam-rplidar $@

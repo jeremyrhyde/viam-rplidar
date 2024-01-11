@@ -13,6 +13,7 @@ format: src/*.cpp src/*.hpp test/*.cpp
 build-module:
 	cmake -B $(BUILD_DIR) -G Ninja ${EXTRA_CMAKE_FLAGS} && \
 	cmake --build $(BUILD_DIR) -j 2
+	cp $(BUILD_DIR)/viam-rplidar viam-rplidar
 
 default: build-module
 
@@ -57,5 +58,5 @@ submodule-initialized:
 		echo "Submodule found successfully"; \
 	fi
 
-module.tar.gz: setup build
-	tar czf $@ *.sh build
+module.tar.gz: setup clean-sdk build-module
+	tar czf $@ *.sh viam-rplidar
