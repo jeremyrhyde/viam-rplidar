@@ -13,6 +13,6 @@
   "build": {
     "build": "make module",
     "path": "viam-rplidar-module.AppImage",
-    "arch" : ["linux/amd64", "linux/arm64"]
+    "arch" : ["linux/arm64"]
   }
 }
