@@ -6,8 +6,6 @@ script:
  - cp ../../../viam-rplidar "$TARGET_APPDIR/usr/bin/viam-rplidar"
  - mkdir -p "$TARGET_APPDIR/usr/share/icons/viam/256x256/apps/"
  - cp ./viam-server.png "$TARGET_APPDIR/usr/share/icons/viam/256x256/apps/viam-server.png"
- - go install github.com/Otterverse/aix@latest
- - cp `go env GOPATH`/bin/aix "$TARGET_APPDIR/usr/bin/"
  - chmod 755 "$TARGET_APPDIR/usr/bin/"*
 
 AppDir:
@@ -17,7 +15,7 @@ AppDir:
     name: viam-rplidar
     icon: viam-server
     version: ${BUILD_CHANNEL}
-    exec: usr/bin/aix
+    exec: usr/bin/viam-rplidar
     exec_args: $@
   apt:
     arch:
@@ -44,6 +42,10 @@ AppDir:
     include: []
     exclude:
     - usr/include
+    - usr/share/man
+    - usr/share/doc
+    - usr/share/info
+    - usr/share/lintian
   runtime:
     env:
         AIX_TARGET: usr/bin/viam-rplidar

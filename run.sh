@@ -8,4 +8,4 @@ cd $(dirname $0)
 # get bundled .so files from this directory
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH-}:$PWD
 
-exec ./viam-rplidar $@
+exec ./viam-rplidar-module.AppImage $@

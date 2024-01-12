@@ -13,7 +13,6 @@ format: src/*.cpp src/*.hpp test/*.cpp
 build-module:
 	cmake -B $(BUILD_DIR) -G Ninja ${EXTRA_CMAKE_FLAGS} && \
 	cmake --build $(BUILD_DIR) -j 2
-	cp $(BUILD_DIR)/viam-rplidar viam-rplidar
 
 default: build-module
 
@@ -21,6 +20,8 @@ all: setup build-module
 
 clean:
 	rm -rf build
+	rm -f viam-rplidar
+	rm -f module.tar.gz
 
 clean-sdk:
 	rm -rf src/third_party/rplidar_sdk/obj
@@ -58,8 +59,13 @@ submodule-initialized:
 		echo "Submodule found successfully"; \
 	fi
 
-module.tar.gz: clean-sdk setup build-module
-	rm -f $@
-	cd ${BUILD_DIR} && tar czf ../$@ mviam-rplidar libviam*.so* -C ../.. run.sh
+module.tar.gz: clean-sdk setup build-module appimage
+	rm -f module.tar.gz
+	cp etc/packaging/appimages/deploy/*.AppImage viam-rplidar-module.AppImage
+	tar czf module.tar.gz viam-rplidar-module.AppImage
+
+module: clean-sdk setup build-module appimage
+	rm -f viam-rplidar-module.AppImage
+	cp etc/packaging/appimages/deploy/*.AppImage viam-rplidar-module.AppImage
 
 include *.make
