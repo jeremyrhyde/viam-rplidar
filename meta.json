@@ -9,7 +9,7 @@
       "model": "jeremyrhyde:camera:rplidar"
     }
   ],
-  "entrypoint": "run.sh",
+  "entrypoint": "viam-rplidar-module.AppImage",
   "build": {
     "build": "make module",
     "path": "viam-rplidar-module.AppImage",
