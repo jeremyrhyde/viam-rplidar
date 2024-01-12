@@ -58,5 +58,5 @@ submodule-initialized:
 		echo "Submodule found successfully"; \
 	fi
 
-module.tar.gz: clean-sdk setup build-module
-	tar czf $@ *.sh viam-rplidar
+module.tar.gz: 
+	tar czf $@ *.sh viam-rplidar ${BUILD_DIR}/libviam*.so*
