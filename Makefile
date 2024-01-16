@@ -67,5 +67,7 @@ module.tar.gz: clean-sdk setup build-module appimage
 module: clean-sdk setup build-module appimage
 	rm -f viam-rplidar-module.AppImage
 	cp etc/packaging/appimages/deploy/*.AppImage viam-rplidar-module.AppImage
+	chmod +x viam-rplidar-module.AppImage
+	tar -czf module.tar.gz viam-rplidar-module.AppImage
 
 include *.make

@@ -12,7 +12,7 @@
   "entrypoint": "viam-rplidar-module.AppImage",
   "build": {
     "build": "make module",
-    "path": "viam-rplidar-module.AppImage",
+    "path": "module.tar.gz",
     "arch" : ["linux/arm64"]
   }
 }
