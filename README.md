@@ -66,7 +66,11 @@ Support for the following RPLiDAR hardware is provided in this module. The table
 | S3                  |    X    |    X    | 
 | C1                  |         |         | 
 
-## Building The Module
+## Installing the Module via Viam
+
+This module is available for out-of-the-box use for both amd64 and arm64 Linux systems via Viam's module registry https://app.viam.com/registry. For use on Mac OS, see the developmental build section below.
+
+## Building the Module
 
 This module is available for development on Linux and Darwin OS systems. To build the module from scratch run:
 
