@@ -1,5 +1,6 @@
 BUILD_CHANNEL?=local
 BUILD_DIR = build/$(shell uname -s)-$(shell uname -m)
+APPIMAGE_DIR = etc/packaging/appimages
 SHELL := /usr/bin/env bash 
 
 ifneq (, $(shell which brew))
@@ -20,8 +21,8 @@ all: setup build-module
 
 clean:
 	rm -rf build
-	rm -f viam-rplidar
-	rm -f module.tar.gz
+	rm -f viam-rplidar module.tar.gz viam-rplidar-module.AppImage
+	rm -rf ${APPIMAGE_DIR}/AppDir ${APPIMAGE_DIR}/appimage-build ${APPIMAGE_DIR}/deploy
 
 clean-sdk:
 	rm -rf src/third_party/rplidar_sdk/obj
