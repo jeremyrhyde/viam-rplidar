@@ -375,7 +375,7 @@ void RPLidar::reconfigure(sdk::Dependencies deps, sdk::ResourceConfig cfg) {
     try {
         initialize(cfg);
     } catch (const std::exception& e) {
-        throw std::runtime_error("failed to reconfigure realsense: " + std::string(e.what()));
+        throw std::runtime_error("failed to reconfigure rplidar: " + std::string(e.what()));
     }
     return;
 }
